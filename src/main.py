@@ -1,91 +1,76 @@
 
-comidas = ["Pizza familiar",
-           "Hamburguesa doble", "Hamburguesa triple",  "Pizza personal", "Pollo frito", "Papas fritas", "Papas fritas", "Arroz con menestra y carne",  "Taco de pollo"
-           "Salchipapa", "Papipollo"]
-precios = [20, 8.50, 11, 9, 7, 3, 5, 8, 3, 4]
+meals = ["Pizza familiar",
+         "Hamburguesa doble", "Hamburguesa triple",  "Pizza personal", "Pollo frito", "Papas fritas", "Arroz con menestra y carne",  "Taco de pollo"
+         "Salchipapa", "Papipollo", "Ratatouille", "Camarón al ajillo"]
+prices = [20, 8.50, 11, 9, 7, 3, 5, 8, 3, 4]
+category = ["Italian food", "American food", "American food", "Italian food", "American food", "American food",
+            "Ecuadorian food", "Mexican food", "Ecuadorian food", "Ecuadorian food", "Especial food", "Especial food"]
+
+special_meal_ctg = ["Especial food"]
+
+# {"papas": 12uni., "hambuerguesa": 20uni}
+client_order = {}
 
 
-comidas_cliente = []
-cantidades_cliente = []
+def get_meal_price(meal: str) -> float:
+    i_price = meals.index(meal)
+    return prices[i_price]
 
 
-def obtener_precio_comida(comida):
-    pos_precio = comidas.index(comida)
-    return precios[pos_precio]
+def get_total_meals_qty(client_order: dict) -> int:
+    total_meals_qty = 0
+
+    for meal_qty in client_order.values():
+        total_meals_qty += meal_qty
+
+    return total_meals_qty
 
 
-def calcular_costo_inicial(comidas_cliente, cantidades_cliente) -> float:
-    costo_total = 0
-    for i in range(len(comidas_cliente)):
-        costo_total += cantidades_cliente[i] * \
-            obtener_precio_comida(comidas_cliente[i])
-
-    return costo_total
+def calc_meal_total_cost(meal: str, meal_qty: int) -> float:
+    meal_total_cost = get_meal_price(meal) * meal_qty
+    return meal_total_cost
 
 
-def calcular_costo(comidas_cliente, cantidades_cliente) -> float:
-    cantidad_total = sum(cantidades_cliente)
-    costo_inicial = calcular_costo_inicial(comidas_cliente, cantidades_cliente)
-    costo_final = costo_inicial
+def calc_base_total_cost(client_order: dict) -> float:
+    total_cost = 0
 
-    if cantidad_total > 5 and cantidad_total < 10:
-        costo_final = costo_final * 0, 90
-    elif cantidad_total >= 10:
-        costo_final = costo_final * 0, 80
+    for meal, meal_qty in client_order.items():
+        total_cost += calc_meal_total_cost(meal, meal_qty)
 
-    return costo_final
-
-def calcular_descuento_especial(costo_total):
-    if costo_total > 50 and costo_total <= 100:
-        costo_total -= 10
-    elif costo_total > 100:
-        costo_total -= 25
-        
-    return costo_total
-        
-def validar_cantidad(cantidad):
-    if cantidad < 0:
-        raise ValueError("ERROR: La cantidad debe ser positiva!")
+    return total_cost
 
 
-if __name__ == '__main__':
-    pos_comida = 0
+def calc_qty_discount(client_order: dict, total_cost) -> float:
+    qty_discount = 0
 
-    while pos_comida != -1:
-        print(
-            """
-=====================
-MENU
-=====================
-"""
-        )
-        for i in range(len(comidas)):
-            print(f"{i}. {comidas[i]}: ${precios[i]}")
-        print("-1. Salir")
+    total_meals_qty = get_total_meals_qty(client_order)
 
-        pos_comida = int(input("\nSelecione su comida: "))
+    if total_meals_qty > 5 and total_meals_qty < 10:
+        qty_discount = total_cost * 0.10
+    elif total_meals_qty >= 10:
+        qty_discount = total_cost * 0.20
 
-        while True:
-            try:
-                if (pos_comida != -1):
-                    cantidad = int(
-                        input("Ingrese cantidad deseada (max. 100): "))
-                validar_cantidad(cantidad)
-            except ValueError as e:
-                print(e)
-            else:
-                break
+    return qty_discount
 
-        if comidas[pos_comida] not in comidas_cliente:
-            comidas_cliente.append(comidas[pos_comida])
-            cantidades_cliente.append(0)
 
-        i_cantidad = comidas_cliente.index(comidas[pos_comida])
-        cantidades_cliente[i_cantidad] += cantidad
+def calc_special_discount(client_order: dict) -> float:
+    special_discount = 0
 
-       
-        print(comidas_cliente)
-        print(cantidades_cliente)
-        print(
-            f"Costo final: {calcular_costo(comidas_cliente, cantidades_cliente)}")
+    for meal, meal_qty in client_order.items():
+        meal_total_cost = calc_meal_total_cost(meal, meal_qty)
 
+        if meal_total_cost > 50 and meal_total_cost <= 100:
+            special_discount += 10
+        elif meal_total_cost > 100:
+            special_discount += 25
+
+    return special_discount
+
+
+def calc_meal_surcharge(meal):
+    meal_surcharge = 0
+
+    if meal in special_meal_ctg:
+        meal_surcharge = calc_meal_total_cost * 0.05
+
+    return meal_surcharge
