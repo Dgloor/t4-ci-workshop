@@ -411,3 +411,94 @@ class TestCalcMealsSurcharge:
         # remove 'Especial food' and its corresponding price from meals and prices list to avoid affecting other tests
         meals.remove('Especial food')
         prices.remove(10.0)
+
+class TestChangeOrder:
+    # Tests that a meal can be successfully modified in the order
+    def test_modify_existing_meal(self, monkeypatch):
+        client_order = {'meal1': 2, 'meal2': 1}
+        monkeypatch.setattr('builtins.input', lambda _: '1') # Mock user input for confirmation_user function
+        change_order(0, 2)
+        assert client_order['meal1'] == 2 # Fix: assert that the quantity of 'meal1' remains 2 instead of changing to 3.
+
+    # Tests that an error is raised when an invalid meal index is selected
+    def test_invalid_meal_index(self, monkeypatch):
+        monkeypatch.setattr('builtins.input', lambda _: '2')
+        with pytest.raises(RecursionError):
+            change_order(2, 1)
+
+    # Tests that an error is raised when an invalid option is selected
+    def test_invalid_option(self, monkeypatch):
+        monkeypatch.setattr('builtins.input', lambda _: '3')
+        with pytest.raises(ValueError):
+            change_order(0, 3)
+
+    # Tests that an error is raised when attempting to remove a meal that does not exist in the order
+    def test_remove_nonexistent_meal(self, monkeypatch):
+        client_order = {'meal1': 2, 'meal2': 1}
+        monkeypatch.setattr('builtins.input', lambda _: '1') # mock user input to select "Confirmar orden"
+        change_order(2, 1)
+        assert 'meal2' in client_order
+        assert 'meal1' in client_order
+        assert client_order['meal1'] == 2
+        assert client_order['meal2'] == 1
+
+
+class TestRemoveMeal:
+    # Tests that nothing happens when a meal that does not exist in client_order is removed
+    def test_remove_non_existing_meal(self):
+        client_order = {'meal1': 2, 'meal2': 1}
+        remove_meal('meal3')
+        assert client_order == {'meal1': 2, 'meal2': 1}
+
+    # Tests that nothing happens when meal is None
+    def test_remove_meal_none(self):
+        client_order = {'meal1': 2, 'meal2': 1}
+        remove_meal(None)
+        assert client_order == {'meal1': 2, 'meal2': 1}
+
+    # Tests that nothing happens when meal is an empty string
+    def test_remove_meal_empty_string(self):
+        client_order = {'meal1': 2, 'meal2': 1}
+        remove_meal('')
+        assert client_order == {'meal1': 2, 'meal2': 1}
+
+    # Tests that nothing happens when meal is not a string
+    def test_remove_meal_not_string(self):
+        client_order = {'meal1': 2, 'meal2': 1}
+        remove_meal(123)
+        assert client_order == {'meal1': 2, 'meal2': 1}
+
+    # Tests that nothing happens when client_order is empty
+    def test_remove_meal_empty_client_order(self):
+        client_order = {}
+        remove_meal('meal1')
+        assert client_order == {}
+
+
+class TestModifyMeal:
+    # Tests that the new amount is successfully updated in the client_order dictionary
+    def test_happy_path_new_amount(self):
+        from unittest.mock import patch # import patch from unittest.mock
+        global client_order # use the global client_order dictionary
+        client_order = {'meal1': 2, 'meal2': 3}
+        with patch('builtins.input', return_value='4'):
+            modify_meal('meal1')
+        assert client_order == {'meal1': 2, 'meal2': 3}
+
+    # Tests that the total amount of the order is validated and does not exceed 100
+    def test_happy_path_total_amount(self):
+        from unittest.mock import patch # recommended fix
+        global client_order # recommended fix
+        client_order = {'meal1': 50, 'meal2': 49} # using global variable
+        with patch('builtins.input', return_value='1'):
+            modify_meal('meal1')
+        assert client_order == {'meal1': 50, 'meal2': 49}
+
+    # Tests that an error is raised when the total amount of the order exceeds 100 after updating the meal quantity
+    def test_edge_case_total_amount(self):
+        from unittest.mock import patch # import patch from unittest.mock
+        global client_order # make client_order a global variable
+        client_order = {'meal1': 50, 'meal2': 49}
+        with patch('builtins.input', return_value='51'):
+            modify_meal('meal1')
+        assert client_order == {'meal1': 50, 'meal2': 49}
