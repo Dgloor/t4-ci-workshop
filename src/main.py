@@ -1,9 +1,10 @@
 
 meals = ["Pizza familiar",
-         "Hamburguesa doble", "Hamburguesa triple",  "Pizza personal", "Pollo frito", "Papas fritas", "Arroz con menestra y carne",  "Taco de pollo"
+         "Hamburguesa doble", "Hamburguesa triple",  "Pizza personal", "Pollo frito", "Papas fritas", "Arroz con menestra y carne",  "Taco de pollo",
          "Salchipapa", "Papipollo", "Ratatouille", "Camarón al ajillo"]
-prices = [20, 8.50, 11, 9, 7, 3, 5, 8, 3, 4]
-category = ["Italian food", "American food", "American food", "Italian food", "American food", "American food",
+prices = [20, 8.50, 11, 9, 7, 3, 5, 8,5, 3, 40, 35]
+
+topic = ["Italian food", "American food", "American food", "Italian food", "American food", "American food",
             "Ecuadorian food", "Mexican food", "Ecuadorian food", "Ecuadorian food", "Especial food", "Especial food"]
 
 special_meal_ctg = ["Especial food"]
@@ -66,6 +67,16 @@ def calc_special_discount(client_order: dict) -> float:
 
     return special_discount
 
+def calc_final_total_cost(client_order: dict) -> float:
+    base_total_cost = calc_base_total_cost(client_order)
+    print("Costo total base: ", base_total_cost)
+    qty_discount = calc_qty_discount(client_order, base_total_cost)
+    print("Descuento por cantidad: ", qty_discount)
+    special_discount = calc_special_discount(client_order)
+    print("Descuento especial: ", special_discount)
+    final_total_cost = base_total_cost - qty_discount - special_discount
+
+    return final_total_cost
 
 def calc_meal_surcharge(meal):
     meal_surcharge = 0
@@ -75,66 +86,98 @@ def calc_meal_surcharge(meal):
 
     return meal_surcharge
 
+def validate_meal(meal):
+    if(meal > len(meals)-1 or meal < -1):
+        raise ValueError("ERROR: La comida no existe!")
+    
 def validate_amount(client_order):
     total_amount = 0
     for amount in client_order.values():
         total_amount += amount
-    if total_amount < 0:
-        client_order.pop_item()
-        raise ValueError("ERROR: La cantidad debe ser positiva!")
     if (total_amount > 100):
-        client_order.pop_item()
-        raise ValueError("ERROR: La cantidad debe ser menor a 100!")
+        client_order.popitem()
+        raise ValueError("ERROR: La cantidad de las órdenes debe ser menor a 100. La cantidad que tiene es: " + str(total_amount))
 
+def validate_qty(meal_qty):
+    if meal_qty < 0:
+        client_order.popitem()
+        raise ValueError("ERROR: La cantidad debe ser positiva!")
+    if meal_qty > 100:
+        client_order.popitem()
+        raise ValueError("ERROR: La cantidad de las órdenes debe ser menor a 100")
 
 def print_order(client_order):
     print("\n-----ORDEN DEL CLIENTE-----")
     print("Cantidad | Plato")
     for meals, amount in client_order.items():
-        print(amount, " ", meals)
+        print(amount, "\t", meals)
 
 
 def print_menu():
-    pass
+   print("\n=== MENU ===\n")
+   for i in range(len(meals)):
+    print(f"{i}. {meals[i]}: ${prices[i]}")
+   print("-1. Finalizar orden")
+   
+def confirmation_user():
+    opt = ["Confirmar", "Cancelar y realizar cambios"]
+    print("\n=== CONFIRMACIÓN ===\n")
+    for i in range(len(opt)):
+        print(f"{i+1}. {opt[i]}")
+    return int(input("Seleccione una opción: "))
 
+def handler_confirmation(option,order_client):
+    if option == 1:
+        print("\n¡Su pedido ha sido confirmado!\n")
+        print(
+            f"Total a pagar: {calc_final_total_cost(client_order)}")
+    elif option == 2:
+        order_client = {}
+        print("\nSu pedido ha sido cancelado\n")
+        print("Elija el plato que desea cambiar")
+    else:
+        raise ValueError("ERROR: Opción inválida")
 
-if __name__ == '_main_':
+if __name__ == '__main__':
     i_meal = 0
     while i_meal != -1:
-        print("=== MENU ===")
-
-        for i in range(len(meals)):
-            print(f"{i}. {meals[i]}: ${prices[i]}")
-        print("-1. Salir")
-
-        i_meal = int(input("\nSelecione su comida: "))
-
+        print_menu()
+        while True:
+            try:
+                i_meal = int(input("\nSelecione su comida: "))
+                validate_meal(i_meal)
+            except ValueError as e:
+                print(e)
+            else:
+                break
         while True:
             try:
                 if (i_meal != -1):
+                    selected_meal = meals[i_meal]
                     meal_qty = int(
                         input("Ingrese cantidad deseada (max. 100): "))
-                selected_meal = meals[i_meal]
+                    if selected_meal not in client_order:
+                        client_order[selected_meal] = 0
 
-                if selected_meal not in client_order:
-                    client_order[selected_meal] = 0
-
-                client_order[selected_meal] += meal_qty
-                validate_amount(client_order)
+                    client_order[selected_meal] += meal_qty
+                    validate_qty(meal_qty)
+                    validate_amount(client_order)
             except ValueError as e:
                 print(e)
             else:
                 break
 
-        # selected_meal = meals[i_meal]
-
-        # if selected_meal not in client_order:
-        #     client_order[selected_meal] = 0
-
-        # client_order[selected_meal] += meal_qty
-
-        # print(client_meals)
-        # print(cantidades_cliente)
         print_order(client_order)
-       # print(
-        #  f"Costo final: {calc_cost(client_meals, cantidades_cliente)}")
+        print(
+            f"Costo final: {calc_final_total_cost(client_order)}")
+
+    while True:
+        try:
+            opt = confirmation_user()
+            handler_confirmation(opt,client_order)
+        except ValueError as e:
+            print(e)
+        else:
+            break
+    
+
