@@ -125,10 +125,13 @@ def print_menu():
    print("-1. Finalizar orden")
    
 def confirmation_user():
-    opt = ["Confirmar", "Cancelar y realizar cambios"]
+    opt = ["Confirmar orden", "Cancelar y realizar cambios"]
     print("\n=== CONFIRMACIÓN ===\n")
     for i in range(len(opt)):
         print(f"{i+1}. {opt[i]}")
+    select_opt = int(input("Seleccione una opción: "))
+    handler_confirmation(select_opt)
+
 
 def print_user_meals():
     print("\n-----ORDEN DEL CLIENTE-----")
@@ -138,19 +141,49 @@ def print_user_meals():
         print(i,"\t",amount, "\t", meals)
         i+=1
 
-def change_order(i_meal):
-    print(i_meal)
-    pass
-       
 
+
+def change_order(i_meal,i_opt):
+    elementos = list(client_order.items())
+    if 0 <= i_meal < len(elementos):
+        meal, amount = elementos[i_meal]
+        print(f"Plato: {meal}, Cantidad: {amount}")
+        if i_opt == 1:
+                remove_meal(meal)
+        elif i_opt == 2:
+            modify_meal(meal)
+    display_order_summary(client_order)
+    confirmation_user()
+    
+def remove_meal(meal):
+    if meal in client_order:
+        del client_order[meal]
+        print(f"El plato '{meal}' ha sido eliminado de la orden.")
+        
+
+def modify_meal(meal):
+    while True:
+            try:
+                    new_amount = int(input(f"Ingrese la nueva cantidad para el plato '{meal}': "))
+                    validate_qty(new_amount)
+                    client_order[meal] = new_amount
+                    validate_amount(client_order)
+                    print(f"La cantidad del plato '{meal}' ha sido modificada a {new_amount}.")
+            except ValueError as e:
+                print(e)
+            else:
+                break
+    
+   
 def cancel_order():
     print_user_meals()
-    i_meal  = int(input("Elija el plato que desea cambiar: "))
+    i_meal  = int(input("Elija el plato que desea cambiar o cancelar: "))
     opt = ["Eliminar plato", "Cambiar cantidad"]
     print("\n=== CAMBIOS ===\n")
     for i in range(len(opt)):
         print(f"{i+1}. {opt[i]}")
-    change_order(i_meal)
+    i_opt = int(input("Elija la opción que desea realizar: "))
+    change_order(i_meal-1,i_opt)
     
     
 def handler_confirmation(option):
@@ -159,9 +192,7 @@ def handler_confirmation(option):
         print(
             f"Total a pagar: ${calc_final_total_cost(client_order)}")
     elif option == 2:
-        print("Su pedido ha sido cancelado")
         cancel_order()
-        print("Elija el plato que desea cambiar")
     else:
         raise ValueError("ERROR: Opción inválida")
 
@@ -195,12 +226,11 @@ if __name__ == '__main__':
                 break
 
         display_order_summary(client_order)
+        print("Opcion -1 para Finalizar orden")
 
-    confirmation_user()
     while True:
         try:
-            opt = int(input("Seleccione una opción: "))
-            handler_confirmation(opt)
+            confirmation_user()
         except ValueError as e:
             print(e)
         else:
